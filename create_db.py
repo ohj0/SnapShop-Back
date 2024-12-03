@@ -2,12 +2,9 @@ from sqlalchemy.orm import Session
 from database import Base, engine, SessionLocal
 from models import Category, Item
 
-# Create the tables in the database
 Base.metadata.create_all(bind=engine)
 
-# Create a session and populate the database
 def create_initial_data(db: Session):
-    # Create categories
     sport_category = Category(name="Sport")
     shoes_category = Category(name="Shoes")
     cosmetics_category = Category(name="Cosmetics")
@@ -17,7 +14,6 @@ def create_initial_data(db: Session):
     db.add_all([sport_category, shoes_category, cosmetics_category, fashion_category, electronics_category])
     db.commit()
 
-    # Create items with image URLs for each category
     sport_items = [
         Item(name="Soccer Ball", price=25, category_id=sport_category.id, image_url="images/soccer_ball.jpeg"),
         Item(name="Tennis Racket", price=50, category_id=sport_category.id, image_url="images/tennis_racket.jpg"),
@@ -85,8 +81,6 @@ def create_initial_data(db: Session):
     print("Initial categories and items with images created!")
 
 
-
-# Create a session and populate the database
 def main():
     db = SessionLocal()
     try:
