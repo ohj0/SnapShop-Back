@@ -2,10 +2,15 @@ import logging
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from database import get_db  # Import your database session utility
 from models import Item  # Import your SQLAlchemy models
+from routers.categories import router as categories_router  # Correct import for categories.py inside the router folder
+from fastapi import Query
+from models import Category
+
+
 
 app = FastAPI()
 
@@ -23,6 +28,10 @@ app.add_middleware(
 
 # Mount the 'static' folder to serve static files (images) from the 'static' directory
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+# Include the categories router
+app.include_router(categories_router, prefix="/api")
 
 
 # Home route with search form
@@ -63,9 +72,36 @@ def get_items(db: Session = Depends(get_db)):
     </html>
     """
 
+@app.get("/api/items/{category}")
+def get_items_by_category(category: str, db: Session = Depends(get_db)):
+    try:
+        # Fetch the category by name
+        category_obj = db.query(Category).filter(Category.name.ilike(category)).first()
 
+        
+        # If the category doesn't exist, return a message
+        if not category_obj:
+            return {"message": f"No category found with the name '{category}'."}
+        
+        # Fetch the items for the category
+        items = db.query(Item).filter(Item.category_id == category_obj.id).all()
+        
+        if items:
+            return {
+                "items": [
+                    {"name": item.name, "price": item.price, "image_url": f"/static/{item.image_url}"}
+                    for item in items
+                ]
+            }
+        else:
+            return {"message": f"No items found in category '{category}'."}
+    except Exception as e:
+        logging.error(f"Error occurred while fetching items for category '{category}': {e}")
+        return {"message": "An error occurred while fetching the items."}
+
+    
 # Search route
-@app.get("/search")
+@app.get("/search/{query}")
 def search_items(query: str, db: Session = Depends(get_db)):
     # Clean up query string
     query = query.strip()
@@ -83,6 +119,6 @@ def search_items(query: str, db: Session = Depends(get_db)):
             }
             for item in items
         ]
-        return JSONResponse(content={"items": search_results})
+        return {"items": search_results}
     else:
-        return JSONResponse(content={"message": "No items found"})
+        return {"message": "No items found"}
