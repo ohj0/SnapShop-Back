@@ -5,7 +5,7 @@ router = APIRouter(
     tags=["categories"],
 )
 
-# In-memory storage for categories
+
 categories = []
 category_id_counter = 1
 
